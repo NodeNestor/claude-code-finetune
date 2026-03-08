@@ -2,11 +2,13 @@
 
 Fine-tune open-source LLMs on your own [Claude Code](https://docs.anthropic.com/en/docs/claude-code) conversation traces. Train a local model that learns Claude Code's agentic coding style — tool use, thinking patterns, multi-step reasoning, and all.
 
-Built for the **Qwen3.5** family (hybrid DeltaNet/GQA architecture) with QLoRA on consumer GPUs. Supports all sizes:
+Built for the **Qwen3.5** family (hybrid DeltaNet/GQA architecture) with QLoRA on consumer GPUs.
 
-| Dense | MoE |
+| Dense (tested) | MoE (experimental) |
 |---|---|
 | 0.8B, 2B, 4B, **9B** (default), 27B | 35B-A3B, 122B-A10B, 397B-A17B |
+
+> **MoE note:** The MoE variants share the same base architecture so the training script *should* work, but they're untested. Potential issues: Unsloth MoE support, BNB 4-bit quantization on expert weights, multi-GPU offloading with MoE layer structure, and VRAM requirements (35B-A3B activates 3B per token but needs all 35B resident). If you try it, let us know!
 
 ## What this does
 
