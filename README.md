@@ -118,16 +118,19 @@ All training parameters can be set via CLI flags, `config.yaml`, or both (CLI wi
 | `--profile-tensors` | off | Log saved tensor sizes on step 0 |
 | `--profile-deep` | off | Full CUDA memory snapshot at peak |
 
-### VRAM guide
+### Tested configurations
 
-| GPU VRAM | Model | Recommended `--seq-length` | Notes |
-|---|---|---|---|
-| 8 GB | 0.8B, 2B | 8192-16384 | Expert LoRAs, router training |
-| 12 GB | 4B | 8192-16384 | Comfortable for short conversations |
-| 16 GB | 9B | 16384-32768 | Sweet spot with all optimizations |
-| 16 GB + 2nd GPU | 9B | 32768-45056 | Use `--offload-layers -1` |
-| 24 GB | 9B, 27B | 32768-65536 | Room for higher LoRA rank |
-| 48 GB+ | 27B, MoE | 65536+ | MoE models (35B-A3B, etc.) |
+These are real numbers from actual training runs with all optimizations enabled, not generic estimates.
+
+**9B on a single 16GB GPU (RTX 5060 Ti):**
+- 32K context with all VRAM optimizations — fits comfortably
+- Memory scales linearly at ~211 KB/token after optimizations
+
+**9B on 16GB + 8GB (dual GPU, weight offloading):**
+- ~44K context — GPU 1 holds frozen weights, GPU 0 does all compute
+- Theoretical max ~49K tokens based on scaling formula
+
+Smaller models (0.8B-4B) need proportionally less — ideal for expert LoRA swarms where you want high throughput and batching. The 0.8B router trains in minutes.
 
 ## The interesting bits
 
