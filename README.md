@@ -174,7 +174,7 @@ peak_delta = 4068 + 0.211 * (n - 15000)  MB  (approximate, 15K-32K range)
 
 Before the CPU offloading fix, scaling was clearly **quadratic** (the 8 GQA layers are O(n²)). After SDPA + CPU offloading, the measured points look linear — but 3 data points isn't conclusive. The GQA layers may still introduce some superlinear growth at longer contexts. We hit OOM at 36K despite theoretical headroom, which suggests either transient allocation spikes or mild superlinear scaling.
 
-Theoretical max with offloading: **~49K tokens** on 16GB (if truly linear).
+In practice we hit ~44K with dual GPU offloading. Single GPU tops out around 32K.
 
 ### What we tried that didn't work
 
