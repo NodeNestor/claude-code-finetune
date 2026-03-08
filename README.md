@@ -120,15 +120,18 @@ All training parameters can be set via CLI flags, `config.yaml`, or both (CLI wi
 
 ### Tested configurations
 
-These are real numbers from actual training runs with all optimizations enabled, not generic estimates.
+Real numbers from actual training runs on RTX 5060 Ti 16GB, all optimizations enabled.
 
-**9B on a single 16GB GPU (RTX 5060 Ti):**
-- 32K context with all VRAM optimizations — fits comfortably
-- Memory scales linearly at ~211 KB/token after optimizations
+**9B on a single 16GB GPU:**
+- 32K context — fits comfortably
+- Measured ~211 KB/token marginal cost between 15K-32K (3 data points)
+- Pre-optimization this was quadratic (8 GQA layers are O(n²)) — SDPA + CPU offloading flattened it, but there may still be some superlinear component at longer contexts
+- OOM observed at 36K on single GPU despite theoretical headroom — transient allocations from weight transfers suspected
 
 **9B on 16GB + 8GB (dual GPU, weight offloading):**
-- ~44K context — GPU 1 holds frozen weights, GPU 0 does all compute
-- Theoretical max ~49K tokens based on scaling formula
+- ~44K context tested
+- GPU 0 base allocation drops from 6.15 GB to 2.35 GB with offloading
+- Theoretical max ~49K tokens, but real-world overhead may limit this
 
 Smaller models (0.8B-4B) need proportionally less — ideal for expert LoRA swarms where you want high throughput and batching. The 0.8B router trains in minutes.
 
@@ -163,13 +166,15 @@ Uses a second GPU (even an 8GB one) as pure weight storage. All 32 decoder layer
 
 ### Memory scaling analysis
 
-After all optimizations, memory scales **linearly** at ~211 KB/token (the earlier quadratic fit was measured before the CPU offloading fix):
+Between 15K-32K tokens, marginal cost measured at ~211 KB/token across 3 data points:
 
 ```
-peak_delta = 4068 + 0.211 * (n - 15000)  MB
+peak_delta = 4068 + 0.211 * (n - 15000)  MB  (approximate, 15K-32K range)
 ```
 
-Theoretical max context with offloading: **~49K tokens** on 16GB.
+Before the CPU offloading fix, scaling was clearly **quadratic** (the 8 GQA layers are O(n²)). After SDPA + CPU offloading, the measured points look linear — but 3 data points isn't conclusive. The GQA layers may still introduce some superlinear growth at longer contexts. We hit OOM at 36K despite theoretical headroom, which suggests either transient allocation spikes or mild superlinear scaling.
+
+Theoretical max with offloading: **~49K tokens** on 16GB (if truly linear).
 
 ### What we tried that didn't work
 
