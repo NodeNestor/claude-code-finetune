@@ -1,0 +1,9 @@
+checkpoints/
+__pycache__/
+*.pyc
+.env
+*.log
+*.jsonl
+
+# User config (template is tracked as config.example.yaml)
+config.yaml

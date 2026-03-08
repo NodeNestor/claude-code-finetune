@@ -1,0 +1,49 @@
+# Claude Code Fine-tune Configuration
+# Copy this to config.yaml and adjust for your setup.
+# CLI flags override these values.
+
+# ─── Model ───
+# All Qwen3.5 sizes share the same hybrid DeltaNet/GQA architecture.
+# Dense:  0.8B, 2B, 4B, 9B, 27B
+# MoE:    35B-A3B, 122B-A10B, 397B-A17B
+model: unsloth/Qwen3.5-9B        # Default — fits on 16GB with optimizations
+# model: unsloth/Qwen3.5-0.8B    # Tiny — great for expert LoRAs / ExpertSwarm
+# model: unsloth/Qwen3.5-2B      # Small — fast iteration
+# model: unsloth/Qwen3.5-4B      # Mid-range
+# model: unsloth/Qwen3.5-27B     # Large — needs 24GB+ VRAM
+
+# ─── Dataset ───
+dataset: claude-traces-split.jsonl  # Path to your training JSONL
+# dataset: /data/claude-traces-dataset.jsonl  # Docker path
+
+# ─── Context & Memory ───
+seq_length: 32768       # Max sequence length in tokens
+                        # 8192  = safe for 8GB VRAM
+                        # 16384 = safe for 12GB VRAM
+                        # 32768 = works on 16GB with all optimizations
+                        # 45056 = max tested on 16GB (with multi-GPU offload)
+
+# ─── LoRA ───
+lora_rank: 32           # LoRA rank (higher = more capacity, more VRAM)
+lora_alpha: 64          # LoRA alpha (usually 2x rank)
+
+# ─── Training ───
+epochs: 1
+batch_size: 1           # Per-device batch size (keep at 1 for 16GB)
+grad_accum: 4           # Gradient accumulation steps (effective batch = batch_size * grad_accum)
+lr: 2e-4                # Learning rate
+warmup_ratio: 0.05
+
+# ─── Multi-GPU (optional) ───
+# offload_layers: -1    # Offload decoder layers to GPU 1 (-1 = all layers)
+                        # Requires a second GPU. Even an 8GB card works as pure weight storage.
+
+# ─── Output ───
+output: checkpoints/claude-code-agent
+save_steps: 200
+export_gguf: true       # Export GGUF for llama.cpp / Ollama
+# export_merged: false  # Export full merged model (large)
+
+# ─── Profiling (for debugging VRAM issues) ───
+# profile_tensors: false  # Log saved tensor sizes on step 0
+# profile_deep: false     # Full CUDA memory snapshot at peak

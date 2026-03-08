@@ -1,0 +1,49 @@
+services:
+  train:
+    build: .
+    container_name: claude-code-finetune
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - ./claude-traces-split.jsonl:/data/claude-traces-dataset.jsonl:ro
+      - ./checkpoints:/checkpoints
+      - ./train.py:/app/train.py
+      - model-cache:/root/.cache/huggingface
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-all}
+      - TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST:-}
+      - TORCH_COMPILE_DISABLE=1
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True,garbage_collection_threshold:0.6
+      - UNSLOTH_ENABLE_CCE=1
+      - UNSLOTH_CE_LOSS_N_CHUNKS=128
+      - HF_TOKEN=${HF_TOKEN:-}
+      - WANDB_API_KEY=${WANDB_API_KEY:-}
+      - WANDB_PROJECT=claude-code-finetune
+    shm_size: "8g"
+    stdin_open: true
+    tty: true
+    # Quick test:  docker compose run train --seq-length 8192 --epochs 1 --save-steps 50
+    # Full train:  docker compose run train   (uses defaults below, 85% of data)
+    # Max data:    docker compose run train --seq-length 131072  (95% of data)
+    command: [
+      "--model", "unsloth/Qwen3.5-9B",
+      "--dataset", "/data/claude-traces-dataset.jsonl",
+      "--output", "/checkpoints/claude-code-agent",
+      "--seq-length", "45056",
+      "--epochs", "1",
+      "--batch-size", "1",
+      "--grad-accum", "4",
+      "--lr", "2e-4",
+      "--lora-rank", "32",
+      "--lora-alpha", "64",
+      "--save-steps", "200",
+      "--export-gguf",
+    ]
+
+volumes:
+  model-cache:

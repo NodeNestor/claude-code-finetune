@@ -1,0 +1,10 @@
+unsloth
+trl
+transformers
+datasets
+peft
+accelerate
+torch
+bitsandbytes
+sentencepiece
+protobuf
